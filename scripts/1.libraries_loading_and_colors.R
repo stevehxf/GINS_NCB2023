@@ -169,7 +169,7 @@ ann_colors <-  list(
 
 # directories for output ----
 ## create a directory for the dataset
-dir <- "figures_manuscript"
+dir <- c("figures_manuscript","rds_manuscript","markers")
 if(!exists(dir)){
   dir.create(dir)
 }  
