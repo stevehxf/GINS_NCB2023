@@ -30,4 +30,4 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 
 ## Data output
 * Script 4: Extended Data Fig. 6b
-* Script 7: Fig. 3d (Signature Gene sets)
+* Script 7: Fig. 3d (Signature gene sets)
