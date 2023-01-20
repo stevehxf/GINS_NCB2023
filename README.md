@@ -1,6 +1,4 @@
 # GINS_NCB
-# Publication associated with this repo.
-Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023, DOI:
 
 ###### Author: Xiaofeng Huang<sup>1,3</sup>, Qiao Zhou<sup>2,3</sup>
 ###### <sup>1</sup> E-mail: xih4001@med.cornell.edu
@@ -9,6 +7,8 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 
 ## Introduction
 The repo contains all the data and scripts you need to reproduce the figures in the paper.
+### Publication associated with this repo.
+Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023, DOI:
 
 ## Scripts
 * Script 1: libraries loading; scripts loading; directories; colors
