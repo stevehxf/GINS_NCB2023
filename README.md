@@ -9,8 +9,8 @@
 ## Introduction
 The repo contains all codes for analysis in the paper.
 
-### Publication associated with this repo
-Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023, DOI:
+### Pre-Publication associated with this repo
+Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023.
 
 ## Scripts
 #### NOTE: Run Script 1 to load all the required libraries and helper scripts.
