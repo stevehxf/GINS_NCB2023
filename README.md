@@ -14,15 +14,15 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 
 ## Scripts
 #### NOTE: Run Script 1 first to load all the required libraries, helper scripts and colors.
-* Script 1: libraries loading; scripts loading; directories; colors
-* Script 2: data processing for GINS organoids
-* Script 3: data processing for islet
-* Script 4: integrating GINS organoids and human islets.
-* Script 5: data processing for GINS differentiation time course
-* Script 6: comparing hGSC and GINS organoids
-* Script 7: comparing hGSC, GINS organoids, and islets
-* Script 8: comparing antral and corpus GINS organoids
-* Script 9: data processing for GINS graft
+* Script 01: libraries loading; scripts loading; directories; colors
+* Script 02: data processing for GINS organoids
+* Script 03: data processing for islet
+* Script 04: integrating GINS organoids and human islets.
+* Script 05: data processing for GINS differentiation time course
+* Script 06: comparing hGSC and GINS organoids
+* Script 07: comparing hGSC, GINS organoids, and islets
+* Script 08: comparing antral and corpus GINS organoids
+* Script 09: data processing for GINS graft
 * Script 10: comparison GINS organoids, GINS grafts and human islets
 * Script 11: visualization of GINS differentiation trajectory
 * Script 12: visualization of GINS differentiation trajectory with islet datasets
@@ -30,10 +30,10 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 * Script 13: Velocity analysis
 
 ## Figures output
-* Script 4: Fig. 3a-c; Extended Data Fig. 4c, 6a
-* Script 6: Extended Data Fig. 4a-b, 4e 
-* Script 7: Fig. 3d; Extended Data Fig. 4d
-* Script 8: Extended Data Fig 5d-e
+* Script 04: Fig. 3a-c; Extended Data Fig. 4c, 6a
+* Script 06: Extended Data Fig. 4a-b, 4e 
+* Script 07: Fig. 3d; Extended Data Fig. 4d
+* Script 08: Extended Data Fig 5d-e
 * Script 10: Fig. 4f-g, 6g; 
 * Script 11: Fig. 5c, 6a; Extended Data Fig 9a-c
 * Script 12: Fig. 5a-b,5d-f; Extended Data Fig 8a-c
