@@ -13,7 +13,7 @@ The repo contains all codes for analysis in the paper.
 Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023.
 
 ## Scripts
-#### NOTE: Run Script 1 to load all the required libraries and helper scripts.
+#### NOTE: Run Script 1 first to load all the required libraries, helper scripts and colors.
 * Script 1: libraries loading; scripts loading; directories; colors
 * Script 2: data processing for GINS organoids
 * Script 3: data processing for islet
