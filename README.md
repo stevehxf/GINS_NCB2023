@@ -7,7 +7,7 @@
 ###### <sup>4</sup> Corresponding
 
 ## Introduction
-The repo contains all the data and scripts you need to reproduce the figures in the paper.
+The repo contains all codes for analysis in the paper.
 
 ### Publication associated with this repo
 Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023, DOI:
