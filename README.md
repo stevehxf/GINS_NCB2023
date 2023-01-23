@@ -13,7 +13,7 @@ The repo contains all the data and scripts you need to reproduce the figures in 
 Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023, DOI:
 
 ## Scripts
-#### NOTE: Run script 1 to load all the required libraries and helper scripts.
+#### NOTE: Run Script 1 to load all the required libraries and helper scripts.
 * Script 1: libraries loading; scripts loading; directories; colors
 * Script 2: data processing for GINS organoids
 * Script 3: data processing for islet
@@ -31,7 +31,7 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 * Script 7: Fig. 3d; Extended Data Fig. 4d
 * Script 8: Extended Data Fig 5d, 5e
 * Script 10: Fig. 4f; Extended Data Fig 7f
-* Script 11: Fig. 5c; Extended Data Fig 9b-c
+* Script 11: Fig. 5c; Extended Data Fig 9a-c
 * 
 ## Data output (no graph plotting)
 * Script 4: Extended Data Fig. 6b
