@@ -1,0 +1,327 @@
+#### Regulon analysis 
+## load the time course dataset
+cgins.vitro.time.muRM <- readRDS("rds_manuscript/cgins.vitro.time.muRM.rds")
+
+## set working directory
+getwd()
+dir.create("SCENIC")
+setwd("SCENIC/")
+
+## get meta
+cellInfo <- data.frame(cgins.vitro.time.muRM@meta.data)
+cellInfo <- cellInfo[,c("orig.ident","Phase","cell.type","Pseudotime",
+                        "nCount_RNA","nFeature_RNA","percent.mt")]
+saveRDS(cellInfo, file="cellInfo.rds")
+
+## get count matrix
+# downsample to 200 cell per cell cluster
+cgins.vitro.time.muRM$cell.type %>% table()
+Idents(cgins.vitro.time.muRM) <- "cell.type"
+time.sub.200 <- subset(cgins.vitro.time.muRM, downsample=200)
+saveRDS(time.sub.200, "time.sub.200.rds")
+exprMat <- as.matrix(time.sub.200@assays$RNA@counts)
+
+
+## download dabatases and setting environment
+mydbDIR <- "cisTarget_databases"
+dir.create(mydbDIR)
+
+download.file("https://resources.aertslab.org/cistarget/databases/homo_sapiens/hg38/refseq_r80/mc9nr/gene_based/hg38__refseq-r80__500bp_up_and_100bp_down_tss.mc9nr.genes_vs_motifs.rankings.feather",
+              destfile = paste0(mydbDIR,"/hg38__refseq-r80__500bp_up_and_100bp_down_tss.mc9nr.feather"),
+              method = "curl")
+download.file("https://resources.aertslab.org/cistarget/databases/homo_sapiens/hg38/refseq_r80/mc9nr/gene_based/hg38__refseq-r80__10kb_up_and_down_tss.mc9nr.genes_vs_motifs.rankings.feather",
+              destfile = paste0(mydbDIR,"/hg38__refseq-r80__10kb_up_and_down_tss.mc9nr.feather"),
+              method = "curl")
+
+mydbs <- c("/hg38__refseq-r80__500bp_up_and_100bp_down_tss.mc9nr.feather",
+           "/hg38__refseq-r80__10kb_up_and_down_tss.mc9nr.feather")
+names(mydbs) <- c("500bp", "10kb")
+## initialize settings
+scenicOptions <- initializeScenic(org="hgnc", 
+                                  nCores=10,
+                                  dbDir=mydbDIR, 
+                                  dbs = mydbs,
+                                  datasetTitle = "HNSCC")
+
+
+# Co-expression network ----
+## genes filtering
+genesKept <- geneFiltering(exprMat, scenicOptions, 
+                           minCountsPerGene = 3 * 0.01 * ncol(exprMat), # Count per gene > %3 cell number
+                           minSamples = ncol(exprMat) * 0.01) # expressed 1% cells
+exprMat_filtered <- exprMat[genesKept, ]
+## compute correlation matrix
+runCorrelation(exprMat_filtered, scenicOptions)
+## TF-Targets correlation regression
+exprMat_filtered_log <- log2(exprMat_filtered+1)
+runGenie3(exprMat_filtered_log, scenicOptions, nParts = 20) #Takes hours
+
+## Optional: The current progess can be saved in the scenicOptions object 
+scenicOptions <- readRDS("int/scenicOptions.rds")
+scenicOptions@settings$verbose <- TRUE
+scenicOptions@settings$nCores <- 10
+scenicOptions@settings$seed <- 123
+
+## create the co-expression modules
+runSCENIC_1_coexNetwork2modules(scenicOptions)
+
+## create regulons
+runSCENIC_2_createRegulons(scenicOptions) # arguments can be used - coexMethod=c("w001", "w005", "top50", "top5perTarget", "top10perTarget", "top50perTarget"))
+
+# Analyzing the network activity in each individual cell -------------------
+# get count matrix from the complete object
+exprMat_all <- as.matrix(cgins.vitro.time.muRM@assays$RNA@counts)
+exprMat_all <- log2(exprMat_all+1)
+scenicOptions@settings$nCores <- 1
+runSCENIC_3_scoreCells(scenicOptions, exprMat=exprMat_all)
+
+# Optional: Binarize activity -----
+# aucellApp <- plotTsne_AUCellApp(scenicOptions, exprMat_log)
+# savedSelections <- shiny::runApp(aucellApp)
+# newThresholds <- savedSelections$thresholds
+# scenicOptions@fileNames$int["aucell_thresholds",1] <- "int/newThresholds.Rds"
+# saveRDS(newThresholds, file=getIntName(scenicOptions, "aucell_thresholds"))
+scenicOptions <- runSCENIC_4_aucell_binarize(scenicOptions)
+tsneAUC(scenicOptions, aucType="AUC") # choose settings
+
+# Export ------
+export2loom(scenicOptions, exprMat_all)
+saveRDS(scenicOptions, "int/scenicOptions.rds")
+
+# SCENIC interpretation -------------------------
+motifEnrichment_selfMotifs_wGenes <- loadInt(scenicOptions, "motifEnrichment_selfMotifs_wGenes")
+## gene motif frequency
+motif.freq <- 
+  motifEnrichment_selfMotifs_wGenes$highlightedTFs %>% 
+  table() %>% 
+  sort(decreasing = T) %>% 
+  as_tibble()
+names(motif.freq) <- c("TF", "Freq")
+motif.freq %>% View()
+##  visualize  motifs
+tableSubset <- motifEnrichment_selfMotifs_wGenes[highlightedTFs == "JUND"]
+viewMotifs(tableSubset)
+
+# Analyze regulon in seurat -----
+# load AUC scores per cell
+AUCmatrix <- readRDS("SCENIC/int/3.4_regulonAUC.Rds")
+AUCmatrix <- AUCmatrix@assays@data@listData$AUC
+AUCmatrix <- data.frame(t(AUCmatrix), check.names=F)
+RegulonName_AUC <- colnames(AUCmatrix)
+RegulonName_AUC <- gsub(' \\(','_',RegulonName_AUC)
+RegulonName_AUC <- gsub('\\)','',RegulonName_AUC)
+colnames(AUCmatrix) <- paste0("auc_", RegulonName_AUC)
+
+# load binary regulonAUC matrix 
+BINmatrix <- readRDS("SCENIC/int/4.1_binaryRegulonActivity.Rds")
+BINmatrix <- data.frame(t(BINmatrix), check.names=F)
+RegulonName_BIN <- colnames(BINmatrix)
+RegulonName_BIN <- gsub(' \\(','_',RegulonName_BIN)
+RegulonName_BIN <- gsub('\\)','',RegulonName_BIN)
+colnames(BINmatrix) <- paste0("bin_", RegulonName_BIN)
+
+## anlysis AUC with seurat  ----
+#setwd("/home/steveexternal/ginsc")
+cgins.vitro.time.muRM <- AddMetaData(cgins.vitro.time.muRM, AUCmatrix)
+cgins.vitro.time.muRM <- AddMetaData(cgins.vitro.time.muRM, BINmatrix)
+cgins.vitro.time.muRM[['AUC']] <- CreateAssayObject(data = t(AUCmatrix))
+cgins.vitro.time.muRM[['AUCBinary']] <- CreateAssayObject(data = t(BINmatrix))
+
+#### rds ----
+saveRDS(cgins.vitro.time.muRM, "rds_manuscript/cgins.vitro.time.muRM.rds")
+
+# regulonAUC heatmap
+pheatmap(AUCmatrix, show_colnames=F,
+         width = 20, height = 20)
+#regulon binary AUC heatmap
+pheatmap(myBINmatrix, show_colnames=F, 
+         color = colorRampPalette(colors = c("white","black"))(100),
+         width = 6, height = 5)
+
+
+
+# get meta for visualization
+meta <- cgins.vitro.time.muRM@meta.data
+meta %>% colnames()
+# convert to long format
+meta <- meta %>% 
+  rownames_to_column(var="cell.name") %>% 
+  as_tibble()
+
+### heatmap
+cellInfo <- readRDS("SCENIC/int/cellInfo.rds")
+cell.type <- subset(cellInfo,select = 'cell.type')
+# auc matrix
+meta.sub <- meta %>% 
+  group_by(cell.type) %>% 
+  sample_n(size = 50)
+meta.sub.auc <- meta.sub %>% 
+  select(starts_with(c("cell","Pseudotime","auc"))) %>% 
+  arrange(cell.type, Pseudotime) %>% 
+  column_to_rownames("cell.name")
+meta.sub.auc.highConf <- meta.sub %>% 
+  select(starts_with(c("cell","Pseudotime","auc"))) %>% 
+  arrange(cell.type, Pseudotime) %>% 
+  column_to_rownames("cell.name") %>% 
+  select(!contains("_extended"))
+
+
+
+# binary auc  matrix
+meta.sub.bin <- meta.sub %>% 
+  select(starts_with(c("cell","bin"))) %>% 
+  column_to_rownames("cell.name")
+meta.sub.binhighConf <- meta.sub %>% 
+  select(starts_with(c("cell","Pseudotime","bin"))) %>% 
+  arrange(cell.type, Pseudotime) %>% 
+  column_to_rownames("cell.name") %>% 
+  select(!contains("_extended"))
+
+meta.sub.binhighConf.GINS <- meta.sub %>% 
+  filter(orig.ident %in% c("Early_GINS","Late_GINS")) %>% 
+  select(starts_with(c("cell","bin"))) %>% 
+  column_to_rownames("cell.name") %>% 
+  select(!contains("_extended"))
+
+# color
+ann_colors <-  list(
+  cell.type = c("Mucoid"="#cab2d6", # grayish violet
+                "Endocrine_1"="#a6cee3", # soft blue
+                "GINS_precursors"="#33a02c", # darkgreen
+                "Delta_like"="#b2df8a", # lightgreen"
+                "Epsilon_like"="#e63946", # brightred
+                "Stem"="#fdbf6f", # light orange
+                "Beta_like"="#fb9a99", # pink
+                "Endocrine_2"="#0096c7", # cyan
+                "Alpha_like"="#6a3d9a"  # moderate violet
+  ),
+  orig.ident = c(
+    "GSC"="#ff595e", # red
+    "Endocrine"="#ffca3a", # yellow
+    "Early_GINS"="#8ac926", # green
+    "Late_GINS"="#1982c4" # blue
+  ),
+  Pseudotime = colorRampPalette(RColorBrewer::brewer.pal(6,"OrRd"))(25)
+)
+# regulon AUC heatmap
+p1 <- pheatmap(t(meta.sub.auc[,-1]), show_colnames=F, show_rownames = F, 
+               annotation_col= cellInfo[,c(1,3,4)],
+               annotation_colors = ann_colors,
+               clustering_method = "ward.D2",
+               cutree_rows = 7,
+               scale = "row",
+               legend = F,
+               cluster_cols = FALSE,
+               color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+               #color = viridis(option = "D", 100),
+               breaks = seq(-2, 2, length.out = 100),
+               width = 14, 
+               height = 14,
+               fontsize = 12)
+plot_grid(p1$gtable)
+ggsave("figures/AUC.heatmap.pdf", width = 7, height = 6)
+
+p1 <- pheatmap(t(meta.sub.auc.highConf[,-1:-3]), show_colnames=F, show_rownames = F, 
+               annotation_col= cellInfo[,c(3,4)],
+               annotation_colors = ann_colors,
+               clustering_method = "ward.D2",
+               cutree_rows = 10,
+               scale = "row",
+               legend = F,
+               cluster_cols = FALSE,
+               color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+               #color = viridis(option = "D", 100),
+               breaks = seq(-1.8, 1.8, length.out = 100),
+               width = 14, 
+               height = 14,
+               fontsize = 12)
+plot_grid(p1$gtable)
+ggsave("figures/AUC.heatmap.highConf.jpeg", width = 15, height = 4.5, dpi = 500)
+p1.r <- pheatmap(t(meta.sub.auc.highConf[,-1:-3]), show_colnames=F, show_rownames = T, 
+                 annotation_col= cellInfo[,c(3,4)],
+                 annotation_colors = ann_colors,
+                 clustering_method = "ward.D2",
+                 cutree_rows = 10,
+                 scale = "row",
+                 legend = F,
+                 cluster_cols = FALSE,
+                 color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+                 #color = viridis(option = "D", 100),
+                 breaks = seq(-1.8, 1.8, length.out = 100),
+                 width = 12, 
+                 height = 12,
+                 fontsize = 4)
+plot_grid(p1.r$gtable)
+ggsave("figures/AUC.heatmap.highConf.rownames.pdf", width = 15, height = 9)
+
+## get the tree
+auc.high.tree <- p1$tree_row
+## cut the tree into 5 clusters
+lbl <- cutree(auc.high.tree, 6)
+## get the cluster and order information
+auc.high.tree.order <- tibble(gene=names(lbl),cluster=lbl, order=auc.high.tree$order) %>% arrange(cluster,order)
+
+## binary regulon AUC heatmap
+p2 <- pheatmap(t(meta.sub.bin[,-1]), show_colnames=F, show_rownames = F, 
+               annotation_col= cellInfo[,c(1,3,4)],
+               annotation_colors = ann_colors,
+               clustering_method = "ward.D2",
+               cluster_cols = FALSE,
+               #color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+               color = viridis(option = "D", 100),
+               fontsize = 12,
+               #color = colorRampPalette(colors = c("white","black"))(100),
+               width = 5, height = 5,
+               legend = FALSE)
+plot_grid(p2$gtable)
+ggsave("figures/binAUC.heatmap.pdf", width = 7, height = 6)
+p2 <- pheatmap(t(meta.sub.binhighConf[,-1:-3]), show_colnames=F, show_rownames = T, 
+               annotation_col= cellInfo[,c(1,3,4)],
+               annotation_colors = ann_colors,
+               clustering_method = "ward.D2",
+               cluster_cols = FALSE,
+               #cutree_rows = 6,
+               #color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+               color = viridis(option = "D", 100),
+               fontsize = 4,
+               #color = colorRampPalette(colors = c("white","black"))(100),
+               width = 5, height = 5,
+               legend = FALSE)
+plot_grid(p2$gtable)
+ggsave("figures/binAUC.heatmap.highConf.pdf", width = 15, height = 9)
+
+## early gins to late gins 
+p3 <- pheatmap(t(meta.sub.binhighConf.GINS[,-1]), show_colnames=F, show_rownames = F, 
+               annotation_col= cellInfo[,c(1,3,4)],
+               annotation_colors = ann_colors,
+               clustering_method = "ward.D2",
+               cluster_cols = FALSE,
+               #cutree_rows = 6,
+               #color = rev(colorRampPalette(RColorBrewer::brewer.pal(11,"RdYlBu"))(100)),
+               #color = viridis(option = "D", 100),
+               fontsize = 12,
+               color = colorRampPalette(colors = c("white","black"))(100),
+               width = 5, height = 5,
+               legend = FALSE)
+plot_grid(p3$gtable)
+
+#### differential regulon -------------
+DefaultAssay(cgins.vitro.time.muRM) <- "AUC"
+all.auc.feature <- rownames(cgins.vitro.time.muRM)
+cgins.vitro.time.muRM <- cgins.vitro.time.muRM %>% ScaleData(feature = all.auc.feature, verbose = FALSE) 
+cgins.vitro.time.muRM <- FindVariableFeatures(cgins.vitro.time.muRM, nfeatures = 300)
+var.auc.feature <- cgins.vitro.time.muRM@assays$AUC@var.features
+cgins.vitro.time.muRM <- cgins.vitro.time.muRM %>% RunUMAP(reduction.name="UMAP_auc", assay = "AUC", features=var.auc.feature)
+DimPlot(cgins.vitro.time.muRM, reduction = "UMAP_auc", cols = cell.type.color) + 
+  coord_fixed() + 
+  theme_void() +
+  NoLegend()
+ggsave("figures_manuscript/auc.umap.jpeg", dpi = 400, width = 4, height = 3)
+Idents(cgins.vitro.time.muRM) <- "cell.type"
+## all marker
+AUC.marker <- FindAllMarkers(cgins.vitro.time.muRM, assay = "AUC", logfc.threshold = 0.065, min.pct = 0.5)
+sce.subset <- cgins.vitro.time.muRM %>% subset(downsample=80)
+cells.subset <- sce.subset@meta.data %>% arrange(cell.type, Pseudotime) %>% rownames()
+DoHeatmap(cgins.vitro.time.muRM, c(AUC.marker$gene), cells = cells.subset) + NoLegend()
+
+setwd("/home/steveexternal/ginsc")
