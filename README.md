@@ -26,15 +26,16 @@ Stomach-derived human insulin-secreting organoids restore glucose homeostasis, N
 * Script 10: comparison GINS organoids, GINS grafts and human islets
 * Script 11: visualization of GINS differentiation trajectory
 * Script 12: visualization of GINS differentiation trajectory with islet datasets
+* Script 13: Regulon analysis
 
 ## Figures output
 * Script 4: Fig. 3a-c; Extended Data Fig. 4c, 6a
 * Script 6: Extended Data Fig. 4a, 4b, 4e 
 * Script 7: Fig. 3d; Extended Data Fig. 4d
 * Script 8: Extended Data Fig 5d, 5e
-* Script 10: Fig. 4f; Extended Data Fig 7f
-* Script 11: Fig. 5c; Extended Data Fig 9a-c
-* Script 12: Fig. 5d-f; Extended Data Fig 8a-c
+* Script 10: Fig. 4f-g, 6g; Extended Data Fig 7f
+* Script 11: Fig. 5c, 6a; Extended Data Fig 9a-c
+* Script 12: Fig. 5a-b,d-f; Extended Data Fig 8a-c
 
 ## Data output (no graph plotting)
 * Script 4: Extended Data Fig. 6b (pathway enrichment)
