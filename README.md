@@ -1,7 +1,7 @@
 # GINS_NCB2023
 
 ###### Author: Xiaofeng Huang<sup>1,2,4</sup>, Qiao Zhou<sup>1,3,4</sup>
-###### <sup>1</sup> Division of Regenerative Medicine & Ansary Stem Cell Institute, Department of Medicine, Weill Cornell Medicine, 1300 York Avenue, New York, NY 10065, USA 
+###### <sup>1</sup> Division of Regenerative Medicine & Hartman Institute for Organ Regeneration, Department of Medicine, Weill Cornell Medicine, 1300 York Avenue, New York, NY, 10065, USA
 ###### <sup>2</sup> E-mail: xih4001@med.cornell.edu
 ###### <sup>3</sup> E-mail: jqz4001@med.cornell.edu 
 ###### <sup>4</sup> Corresponding
@@ -9,7 +9,7 @@
 ## Introduction
 The repo contains all codes for analysis in the paper.
 
-### Pre-Publication associated with this repo
+### Publication associated with this repo
 Stomach-derived human insulin-secreting organoids restore glucose homeostasis, Nature Cell Biology, 2023.
 
 ## Scripts
